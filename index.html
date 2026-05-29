@@ -1,0 +1,540 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Villagesquare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-village">
+      <div class="loading-skyline">
+        <span>&#x1F3E0;</span>
+        <span>&#x1F3EA;</span>
+        <span>&#x1F3D8;&#xFE0F;</span>
+        <span>&#x26EA;</span>
+        <span>&#x1F333;</span>
+      </div>
+      <div class="loading-ground"></div>
+      <h1 class="loading-title">Villagesquare</h1>
+      <p class="loading-sub">Connecting to the square<span class="loading-dots"></span></p>
+      <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+    </div>
+  </div>
+
+  <div id="join-screen" class="screen hidden">
+    <div class="card">
+      <div class="brand">
+        <span class="brand-mark vs-brand-mark">&#x1F3D8;&#xFE0F;</span>
+        <div>
+          <h1>Villagesquare</h1>
+          <p class="tagline">Your town, your people</p>
+        </div>
+      </div>
+      <label>
+        Handle <span class="hint-small">(permanent &mdash; your unique @handle, set it once)</span>
+        <input id="username" type="text" placeholder="e.g. Bob" maxlength="20" autocomplete="username" />
+      </label>
+      <div id="handle-locked-row" class="handle-locked-row hidden">
+        <span>&#x1F512; Handle locked to this device.</span>
+      </div>
+      <label>
+        Display name <span class="hint-small">(shown to others &mdash; changeable any time)</span>
+        <input id="display-name-input" type="text" placeholder="e.g. Bob" maxlength="32" autocomplete="nickname" />
+      </label>
+      <label id="pin-label">
+        Password / PIN <span class="hint-small">(4+ digits = PIN &nbsp;&middot;&nbsp; 4+ text = password)</span>
+        <input id="pin-input" type="password" placeholder="Protects your account (optional for new accounts)" maxlength="64" autocomplete="current-password" />
+      </label>
+      <p id="join-error" class="join-error hidden"></p>
+      <p class="hint">Your handle is permanent and identifies your account. Set a password or PIN so nobody else can sign in as you.</p>
+      <button id="join-btn" type="button">Enter the Square</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <aside id="sidebar" class="sidebar">
+      <button id="sidebar-collapse-btn" type="button" class="sidebar-collapse-btn" title="Collapse sidebar">&#8249;</button>
+      <div class="sidebar-inner">
+        <div class="sidebar-head">
+          <div class="sidebar-identity">
+            <div>
+              <strong id="my-name-label">You</strong>
+              <button id="change-name-btn" type="button" class="change-name-btn" title="Change display name">&#x270F;</button>
+            </div>
+            <span id="my-handle-label" class="my-handle-label"></span>
+            <span class="status-dot" title="Connected"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap">
+            <span id="token-display" class="token-display hidden" title="Tokens">&#x1FA99; <span id="token-count">0</span></span>
+            <button id="claim-token-btn" type="button" class="claim-token-btn hidden" title="Claim your hourly token">Claim &#x1FA99;</button>
+            <span id="token-timer" class="token-timer hidden"><span id="token-timer-label">--:--</span></span>
+            <button id="theme-btn" type="button" class="icon-btn" title="Change theme">&#x1F3A8;</button>
+            <button id="sign-out-btn" type="button" class="icon-btn" title="Sign out">&#x21A9;</button>
+          </div>
+        </div>
+        <div class="sidebar-actions">
+          <button id="groups-btn" type="button" class="action-btn">&#x1F465; Groups</button>
+        </div>
+        <div id="mentions-banner" class="mentions-banner hidden" role="alert">
+          <span id="mentions-banner-text"></span>
+          <button id="mentions-dismiss-btn" type="button" class="icon-btn" title="Dismiss" style="margin-left:auto;font-size:0.9rem">&times;</button>
+        </div>
+        <div class="sidebar-section">
+          <h2>Chats</h2>
+          <ul id="chat-list" class="chat-list"></ul>
+          <p id="chat-list-empty" class="empty-hint hidden">No chats yet &mdash; open Squares or message someone online.</p>
+        </div>
+        <div class="sidebar-section">
+          <h2>People</h2>
+          <ul id="online-list" class="online-list"></ul>
+          <p id="online-empty" class="empty-hint">Nobody else in the square yet.</p>
+        </div>
+        <div class="sidebar-section" id="friends-section">
+          <h2>Friends <span id="friend-req-badge" class="friend-req-badge hidden"></span></h2>
+          <ul id="friends-list" class="online-list"></ul>
+          <p id="friends-empty" class="empty-hint">No friends yet &mdash; add someone to message them anytime, even when offline.</p>
+        </div>
+        <div class="sidebar-section" id="blocked-section">
+          <h2>Blocked</h2>
+          <ul id="blocked-list" class="online-list"></ul>
+          <p id="blocked-empty" class="empty-hint">No blocked villagers.</p>
+        </div>
+        <div class="sidebar-section hidden" id="admin-section">
+          <h2>&#x1F511; Admin</h2>
+          <div class="admin-peek-row">
+            <input id="admin-channel-input" type="text" placeholder="Channel ID e.g. room:general" maxlength="80" autocomplete="off" />
+            <button id="admin-peek-btn" type="button" class="action-btn">Peek</button>
+          </div>
+          <button id="open-admin-panel-btn" type="button" class="action-btn" style="margin-top:0.4rem">&#x2699; Admin Panel</button>
+        </div>
+      </div>
+    </aside>
+
+    <main id="main" class="main">
+      <div id="no-chat" class="no-chat">
+        <p>&#x1F3D8;&#xFE0F; Pick a chat, open <strong>Squares</strong>, or tap someone online to start talking.</p>
+      </div>
+      <div id="chat-panel" class="chat-panel hidden">
+        <header class="chat-header">
+          <button id="sidebar-toggle" type="button" class="icon-btn mobile-only" aria-label="Open chats">&#9776;</button>
+          <div class="chat-header-titles">
+            <h1 id="chat-title">Chat</h1>
+            <p id="chat-subtitle"></p>
+          </div>
+          <button id="nickname-btn" type="button" class="icon-btn hidden" title="Set nickname">&#x270F;&#xFE0F;</button>
+          <button id="donate-token-dm-btn" type="button" class="icon-btn hidden" title="Give tokens">&#x1FA99;</button>
+          <button id="block-chat-btn" type="button" class="icon-btn hidden" title="Block user">Block</button>
+          <button id="group-settings-btn" type="button" class="icon-btn hidden" title="Square settings">&#x2699;&#xFE0F;</button>
+          <div class="games-dropdown" id="games-dropdown">
+            <button id="games-btn" type="button" class="icon-btn" title="Games">&#x1F3AE;</button>
+            <div id="games-menu" class="dropdown-menu hidden">
+              <button type="button" class="dropdown-item" data-game="rps">&#x2702;&#xFE0F; Rock Paper Scissors</button>
+              <button type="button" class="dropdown-item" data-game="dice">&#x1F3B2; Dice Duel</button>
+              <button type="button" class="dropdown-item" data-game="coinflip">&#x1FA99; Coin Flip</button>
+              <button type="button" class="dropdown-item" data-game="numberduel">&#x1F522; Number Duel</button>
+              <button type="button" class="dropdown-item" data-game="8ball">&#x1F3B1; Magic 8-Ball</button>
+              <button type="button" class="dropdown-item" data-game="reaction">&#x26A1; Reaction Race</button>
+              <button type="button" class="dropdown-item" data-game="mathduel">&#x1F9EE; Math Duel</button>
+              <button type="button" class="dropdown-item" data-game="trivia">&#x1F9E0; Trivia Duel</button>
+              <button type="button" class="dropdown-item" data-game="typerace">&#x2328;&#xFE0F; Type Race</button>
+              <div class="dropdown-divider"></div>
+              <div class="wager-row" id="wager-row">
+                <label class="wager-label" for="wager-amount-input">&#x1FA99; Wager</label>
+                <input type="number" id="wager-amount-input" class="wager-input" min="0" max="100" value="0" />
+                <span class="wager-each">each</span>
+              </div>
+            </div>
+          </div>
+          <button id="filter-btn" type="button" class="icon-btn filter-active" title="Profanity filter: ON">&#x1F6AB;</button>
+          <button id="delete-chat-btn" type="button" class="icon-btn danger" title="Remove this chat">Delete</button>
+        </header>
+        <ul id="messages" aria-live="polite"></ul>
+        <form id="chat-form">
+          <input id="message-input" type="text" placeholder="Say something to the square&hellip;" maxlength="2000" autocomplete="off" />
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </main>
+    <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
+  </div>
+
+  <!-- Squares modal -->
+  <div id="groups-modal" class="modal hidden" role="dialog" aria-labelledby="groups-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="groups-modal-title">&#x1F465; Groups</h2>
+        <button id="close-groups-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <div class="modal-tabs">
+        <button type="button" class="tab active" data-tab="join">Join</button>
+        <button type="button" class="tab" data-tab="create">Create</button>
+      </div>
+      <div id="tab-join" class="tab-panel">
+        <p class="modal-hint">Tap a square to join it. Share the name so friends pick the same one.</p>
+        <ul id="groups-list" class="groups-pick-list"></ul>
+        <p id="groups-list-empty" class="empty-hint hidden">No squares yet &mdash; create one first.</p>
+        <label class="inline-label">
+          Or type a square name
+          <input id="join-group-input" type="text" placeholder="e.g. game-night" maxlength="32" />
+        </label>
+        <button id="join-group-btn" type="button" class="modal-primary">Join square</button>
+      </div>
+      <div id="tab-create" class="tab-panel hidden">
+        <p class="modal-hint">Create a new square. Friends join the same name under Join.</p>
+        <label>Square name
+          <input id="create-group-input" type="text" placeholder="e.g. weekend-squad" maxlength="32" />
+        </label>
+        <label>Passcode <span class="muted-label">(optional &mdash; lock the square)</span>
+          <input id="create-group-passcode" type="password" placeholder="Leave blank for no lock" maxlength="64" />
+        </label>
+        <button id="create-group-btn" type="button" class="modal-primary">Create square</button>
+      </div>
+      <p id="group-error" class="join-error hidden"></p>
+    </div>
+  </div>
+
+  <!-- Passcode modal -->
+  <div id="passcode-modal" class="modal hidden" role="dialog" aria-labelledby="passcode-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="passcode-modal-title">&#x1F512; Locked Square</h2>
+        <button id="close-passcode-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint">Enter the passcode to join <strong id="passcode-group-name"></strong>.</p>
+      <label>Passcode
+        <input id="passcode-input" type="password" placeholder="Enter passcode" maxlength="64" autocomplete="off" />
+      </label>
+      <p id="passcode-error" class="join-error hidden"></p>
+      <button id="passcode-submit-btn" type="button" class="modal-primary">Join</button>
+    </div>
+  </div>
+
+  <!-- RPS modal -->
+  <div id="rps-modal" class="modal hidden" role="dialog" aria-labelledby="rps-modal-title">
+    <div class="modal-card">
+      <header class="modal-head"><h2 id="rps-modal-title">&#x2702;&#xFE0F; Rock Paper Scissors</h2></header>
+      <p class="modal-hint" id="rps-opponent-label"></p>
+      <p class="modal-hint" id="rps-status">Pick your move!</p>
+      <div class="rps-picks">
+        <button type="button" class="rps-pick-btn" data-move="rock">&#x1FAA8;<br>Rock</button>
+        <button type="button" class="rps-pick-btn" data-move="paper">&#x1F4C4;<br>Paper</button>
+        <button type="button" class="rps-pick-btn" data-move="scissors">&#x2702;&#xFE0F;<br>Scissors</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Number Duel modal -->
+  <div id="numduel-modal" class="modal hidden" role="dialog" aria-labelledby="numduel-modal-title">
+    <div class="modal-card">
+      <header class="modal-head"><h2 id="numduel-modal-title">&#x1F522; Number Duel</h2></header>
+      <p class="modal-hint" id="numduel-opponent-label"></p>
+      <p class="modal-hint" id="numduel-status">Pick a number 1&ndash;10!</p>
+      <div class="num-picks">
+        <button type="button" class="num-pick-btn" data-num="1">1</button>
+        <button type="button" class="num-pick-btn" data-num="2">2</button>
+        <button type="button" class="num-pick-btn" data-num="3">3</button>
+        <button type="button" class="num-pick-btn" data-num="4">4</button>
+        <button type="button" class="num-pick-btn" data-num="5">5</button>
+        <button type="button" class="num-pick-btn" data-num="6">6</button>
+        <button type="button" class="num-pick-btn" data-num="7">7</button>
+        <button type="button" class="num-pick-btn" data-num="8">8</button>
+        <button type="button" class="num-pick-btn" data-num="9">9</button>
+        <button type="button" class="num-pick-btn" data-num="10">10</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Magic 8-Ball modal -->
+  <div id="eightball-modal" class="modal hidden" role="dialog" aria-labelledby="eightball-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="eightball-modal-title">&#x1F3B1; Magic 8-Ball</h2>
+        <button id="close-eightball-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint">Ask a yes/no question &mdash; anyone can accept and the 8-ball will answer!</p>
+      <label>Your question
+        <input id="eightball-question-input" type="text" placeholder="e.g. Will we win tonight?" maxlength="100" autocomplete="off" />
+      </label>
+      <button id="eightball-submit-btn" type="button" class="modal-primary">Challenge</button>
+    </div>
+  </div>
+
+  <!-- Reaction Race modal -->
+  <div id="reaction-modal" class="modal hidden" role="dialog" aria-label="Reaction Race">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>&#x26A1; Reaction Race</h2>
+        <button id="close-reaction-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint" id="reaction-opponent-label"></p>
+      <p class="modal-hint" id="reaction-status">Get ready&hellip;</p>
+      <div class="reaction-go-area">
+        <button type="button" id="reaction-tap-btn" class="reaction-tap-btn hidden" disabled>TAP!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trivia Duel modal -->
+  <div id="trivia-modal" class="modal hidden" role="dialog" aria-label="Trivia Duel">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>&#x1F9E0; Trivia Duel</h2>
+      </header>
+      <p class="modal-hint" id="trivia-opponent-label"></p>
+      <p class="modal-hint" id="trivia-status">First correct answer wins!</p>
+      <p id="trivia-question" class="trivia-question"></p>
+      <div class="trivia-options" id="trivia-options">
+        <button type="button" class="trivia-opt-btn" data-choice="A"></button>
+        <button type="button" class="trivia-opt-btn" data-choice="B"></button>
+        <button type="button" class="trivia-opt-btn" data-choice="C"></button>
+        <button type="button" class="trivia-opt-btn" data-choice="D"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Type Race modal -->
+  <div id="typerace-modal" class="modal hidden" role="dialog" aria-label="Type Race">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>&#x2328;&#xFE0F; Type Race</h2>
+      </header>
+      <p class="modal-hint" id="typerace-opponent-label"></p>
+      <p class="modal-hint" id="typerace-status">Type the phrase below as fast as you can!</p>
+      <p id="typerace-phrase" class="typerace-phrase"></p>
+      <input id="typerace-input" type="text" placeholder="Type here…" autocomplete="off" spellcheck="false" />
+      <p id="typerace-feedback" class="modal-hint" style="color: var(--unread); min-height: 1.2em;"></p>
+      <button id="typerace-submit-btn" type="button" class="modal-primary">Submit</button>
+    </div>
+  </div>
+
+  <!-- Math Duel modal -->
+  <div id="mathduel-modal" class="modal hidden" role="dialog" aria-label="Math Duel">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>&#x1F9EE; Math Duel</h2>
+        <button id="close-mathduel-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint" id="mathduel-opponent-label"></p>
+      <p id="mathduel-problem" class="mathduel-problem"></p>
+      <div class="mathduel-answer-row">
+        <input id="mathduel-input" type="number" class="mathduel-input" placeholder="Your answer&hellip;" autocomplete="off" />
+        <button id="mathduel-submit-btn" type="button" class="modal-primary small">Submit</button>
+      </div>
+      <p id="mathduel-status" class="modal-hint"></p>
+    </div>
+  </div>
+
+  <!-- Group / Square Settings modal -->
+  <div id="group-settings-modal" class="modal hidden" role="dialog" aria-labelledby="gs-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="gs-modal-title">&#x2699;&#xFE0F; <span id="gs-group-name"></span></h2>
+        <button id="close-gs-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <div class="modal-tabs">
+        <button type="button" class="tab active" data-gstab="members">Members</button>
+        <button type="button" class="tab" data-gstab="whitelist">Whitelist</button>
+        <button type="button" class="tab" data-gstab="blacklist">Blacklist</button>
+      </div>
+      <div id="gstab-members" class="tab-panel">
+        <div class="gs-passcode-row" id="gs-passcode-row">
+          <span class="gs-passcode-label">&#x1F511; Passcode:</span>
+          <span id="gs-passcode-display" class="gs-passcode-value"></span>
+        </div>
+        <p class="modal-hint">Villagers currently in this square. Kick removes them; Kick &amp; Ban also blacklists them.</p>
+        <ul id="gs-members-list" class="gs-list"></ul>
+        <p id="gs-members-empty" class="empty-hint">No other members online right now.</p>
+        <div id="gs-delete-row" class="gs-delete-row hidden">
+          <button id="gs-delete-group-btn" type="button" class="modal-primary danger-btn gs-delete-btn">&#x1F5D1; Delete Square</button>
+        </div>
+      </div>
+      <div id="gstab-whitelist" class="tab-panel hidden">
+        <p class="modal-hint">If non-empty, only these villagers (plus you) can join. Leave empty to allow everyone.</p>
+        <ul id="gs-whitelist-list" class="gs-list"></ul>
+        <p id="gs-whitelist-empty" class="empty-hint">Empty &mdash; anyone can join.</p>
+        <div class="gs-add-row">
+          <input id="gs-whitelist-input" type="text" placeholder="Username" maxlength="24" autocomplete="off" />
+          <button id="gs-whitelist-add-btn" type="button" class="modal-primary small">Add</button>
+        </div>
+      </div>
+      <div id="gstab-blacklist" class="tab-panel hidden">
+        <p class="modal-hint">These villagers can never join this square.</p>
+        <ul id="gs-blacklist-list" class="gs-list"></ul>
+        <p id="gs-blacklist-empty" class="empty-hint">Empty &mdash; nobody is banned.</p>
+        <div class="gs-add-row">
+          <input id="gs-blacklist-input" type="text" placeholder="Username" maxlength="24" autocomplete="off" />
+          <button id="gs-blacklist-add-btn" type="button" class="modal-primary small">Ban</button>
+        </div>
+      </div>
+      <p id="gs-error" class="join-error hidden"></p>
+    </div>
+  </div>
+
+  <!-- Nickname modal -->
+  <!-- Donate token modal -->
+  <div id="donate-modal" class="modal hidden" role="dialog" aria-labelledby="donate-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="donate-modal-title">&#x1FA99; Give Tokens</h2>
+        <button id="close-donate-modal-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint">Send tokens to <strong id="donate-modal-target"></strong>.</p>
+      <label>Amount
+        <input id="donate-amount-input" type="number" min="1" max="9999" value="1" autocomplete="off" />
+      </label>
+      <button id="donate-confirm-btn" type="button" class="modal-primary">Send</button>
+    </div>
+  </div>
+
+  <div id="nickname-modal" class="modal hidden" role="dialog" aria-labelledby="nickname-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="nickname-modal-title">&#x270F;&#xFE0F; Nickname</h2>
+        <button id="close-nickname-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint">Set a local nickname for <strong id="nickname-target-label"></strong>. Only you see it.</p>
+      <label>Nickname
+        <input id="nickname-input" type="text" placeholder="Leave blank to remove" maxlength="24" autocomplete="off" />
+      </label>
+      <button id="nickname-save-btn" type="button" class="modal-primary">Save</button>
+    </div>
+  </div>
+
+  <!-- Change display name modal -->
+  <div id="change-name-modal" class="modal hidden" role="dialog" aria-labelledby="change-name-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="change-name-modal-title">Change Display Name</h2>
+        <button id="close-change-name-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p class="modal-hint">This is what others see. Your handle <span id="change-name-handle-label" class="gs-passcode-value"></span> never changes.</p>
+      <label>New display name
+        <input id="change-name-input" type="text" placeholder="e.g. Bob" maxlength="32" autocomplete="off" />
+      </label>
+      <p id="change-name-error" class="join-error hidden"></p>
+      <button id="change-name-save-btn" type="button" class="modal-primary">Save</button>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div id="admin-panel-modal" class="modal hidden" role="dialog" aria-labelledby="admin-modal-title">
+    <div class="modal-card admin-modal-card">
+      <header class="modal-head">
+        <h2 id="admin-modal-title">&#x1F511; Admin Panel</h2>
+        <button id="close-admin-panel-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <div class="modal-tabs">
+        <button type="button" class="tab active" data-admintab="tokens">Tokens</button>
+        <button type="button" class="tab" data-admintab="bans">Bans</button>
+        <button type="button" class="tab" data-admintab="content">Content</button>
+        <button type="button" class="tab" data-admintab="titles">Titles</button>
+        <button type="button" class="tab" data-admintab="users">Users</button>
+        <button type="button" class="tab" data-admintab="messages">Messages</button>
+      </div>
+      <div id="admintab-tokens" class="tab-panel">
+        <p class="modal-hint">Give or take tokens. Admin balance is unaffected.</p>
+        <label>Target handle
+          <input id="admin-token-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+        </label>
+        <label>Amount
+          <input id="admin-token-amount" type="number" min="1" max="100000" placeholder="e.g. 10" />
+        </label>
+        <div class="admin-btn-row">
+          <button id="admin-give-btn" type="button" class="modal-primary" style="background:var(--online)">Give Tokens</button>
+          <button id="admin-take-btn" type="button" class="modal-primary danger-btn">Take Tokens</button>
+        </div>
+      </div>
+      <div id="admintab-bans" class="tab-panel hidden">
+        <p class="modal-hint">Banned villagers cannot sign in. Temp bans expire automatically.</p>
+        <label>Target handle
+          <input id="admin-ban-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+        </label>
+        <label>Ban type
+          <select id="admin-ban-type">
+            <option value="perm">Permanent</option>
+            <option value="temp">Temporary</option>
+          </select>
+        </label>
+        <div id="admin-temp-row" class="hidden" style="display:flex;gap:0.4rem;align-items:center">
+          <input id="admin-ban-duration" type="number" min="1" placeholder="Duration" style="flex:1" />
+          <select id="admin-ban-unit">
+            <option value="m">minutes</option>
+            <option value="h" selected>hours</option>
+            <option value="d">days</option>
+          </select>
+        </div>
+        <label>Reason <span class="hint-small">(optional)</span>
+          <input id="admin-ban-reason" type="text" maxlength="200" placeholder="optional" autocomplete="off" />
+        </label>
+        <div class="admin-btn-row">
+          <button id="admin-ban-btn" type="button" class="modal-primary danger-btn">Ban</button>
+          <button id="admin-unban-btn" type="button" class="modal-primary">Unban</button>
+        </div>
+        <hr class="admin-divider" />
+        <h3 class="admin-subhead">Active bans</h3>
+        <ul id="admin-bans-list" class="admin-bans-list"><li class="empty-hint">Loading&hellip;</li></ul>
+      </div>
+      <div id="admintab-content" class="tab-panel hidden">
+        <p class="modal-hint">Delete any square. To delete individual messages, open the channel and use the &times; on any message.</p>
+        <fieldset class="admin-fieldset">
+          <legend>Delete Square</legend>
+          <label>Square name
+            <input id="admin-del-group-input" type="text" placeholder="e.g. weekend-squad" maxlength="32" autocomplete="off" />
+          </label>
+          <button id="admin-del-group-btn" type="button" class="modal-primary danger-btn">Delete Square</button>
+        </fieldset>
+      </div>
+      <div id="admintab-users" class="tab-panel hidden">
+        <p class="modal-hint">All registered villagers and their token balances.</p>
+        <button id="admin-refresh-users-btn" type="button" class="modal-primary small" style="margin-bottom:0.5rem">Refresh</button>
+        <ul id="admin-users-list" class="admin-bans-list"><li class="empty-hint">Click Refresh to load.</li></ul>
+      </div>
+      <div id="admintab-titles" class="tab-panel hidden">
+        <p class="modal-hint">Assign a title badge that appears next to a user's name in chat.</p>
+        <label>Target handle
+          <input id="admin-title-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+        </label>
+        <label>Title
+          <select id="admin-title-select">
+            <option value="none">(none)</option>
+            <option value="new">&#x1F331; New</option>
+            <option value="verified">&#x2714;&#xFE0F; Verified</option>
+            <option value="dev">&#x1F9D1;&#x200D;&#x1F4BB; Dev</option>
+            <option value="mod">&#x1F6E1; Mod</option>
+            <option value="staff">&#x1F4BC; Staff</option>
+            <option value="pro">&#x26A1; Pro</option>
+            <option value="vip">&#x1F48E; VIP</option>
+            <option value="og">&#x1F451; OG</option>
+            <option value="elite">&#x1F9E0; Elite</option>
+            <option value="founder">&#x1F3DB; Founder</option>
+            <option value="legend">&#x1F984; Legend</option>
+            <option value="admin">&#x1F6E1;&#xFE0F; Admin</option>
+            <option value="creator">&#x2B50; Creator</option>
+          </select>
+        </label>
+        <button id="admin-set-title-btn" type="button" class="modal-primary">Set Title</button>
+      </div>
+      <div id="admintab-messages" class="tab-panel hidden">
+        <p class="modal-hint">Browse messages in any channel by ID.</p>
+        <div class="admin-peek-row">
+          <input id="admin-msg-channel-input" type="text" placeholder="room:general or dm:alice|bob" maxlength="80" autocomplete="off" />
+          <button id="admin-msg-load-btn" type="button" class="modal-primary small">Load</button>
+        </div>
+        <div id="admin-msg-panel" class="admin-msg-panel"></div>
+      </div>
+      <p id="admin-result-msg" class="admin-result-msg hidden"></p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
